@@ -61,12 +61,6 @@
 * 可隐藏表格网格线，课程块和时间轴仍会保留；
 * 可显示或隐藏周末。
 
-## 安装
-
-```bash
-adb install -r ChenClasstable-debug.apk
-```
-
 ---
 
 ## 编译环境
