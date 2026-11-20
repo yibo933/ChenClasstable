@@ -11,6 +11,9 @@
 
 ---
 
+## 下载
+[蓝奏云](https://yangyibo.lanzouw.com/i0mjQ4gptnfi)密码:b1m4,手机下载不了将手机浏览器UA改为电脑端！
+
 ## 界面预览
 
 |课表页|今日页|深色课表|
