@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>教务系统（演示）</title>
+    <style>
+        body { font-family: sans-serif; padding: 8px; }
+        h3 { margin: 8px 0; }
+        .login { border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin-bottom: 8px; }
+        table { border-collapse: collapse; width: 100%; font-size: 12px; }
+        td, th { border: 1px solid #ccc; padding: 4px; text-align: center; }
+        .course { background: #eef6ff; }
+    </style>
+</head>
+<body>
+<h3>××大学 · 教务系统（演示页面）</h3>
+<div class="login">
+    状态：<b>已登录</b>（演示）<br />
+    学期：2026-2027 学年第一学期
+</div>
+<table id="kbtable">
+    <tr>
+        <th>节次</th><th>周一</th><th>周二</th><th>周三</th><th>周四</th><th>周五</th><th>周六</th><th>周日</th>
+    </tr>
+    <tr>
+        <td>第1节</td>
+        <td class="course">高等数学<br />张老师<br />教101<br />1-16周</td>
+        <td></td>
+        <td class="course">线性代数<br />赵老师<br />教203<br />1-16周</td>
+        <td></td>
+        <td class="course">大学物理<br />王老师<br />物理楼201<br />1-8,10-16周</td>
+        <td></td><td></td>
+    </tr>
+    <tr>
+        <td>第2节</td>
+        <td class="course">高等数学<br />张老师<br />教101<br />1-16周</td>
+        <td></td>
+        <td class="course">线性代数<br />赵老师<br />教203<br />1-16周</td>
+        <td></td>
+        <td class="course">大学物理<br />王老师<br />物理楼201<br />1-8,10-16周</td>
+        <td></td><td></td>
+    </tr>
+    <tr>
+        <td>第3节</td>
+        <td></td>
+        <td class="course">大学英语<br />李老师<br />文科楼302<br />1-16周(单)</td>
+        <td></td>
+        <td class="course">数据结构<br />陈老师<br />实验楼401<br />1-16周</td>
+        <td></td><td></td><td></td>
+    </tr>
+    <tr>
+        <td>第4节</td>
+        <td></td>
+        <td class="course">大学英语<br />李老师<br />文科楼302<br />1-16周(单)</td>
+        <td></td>
+        <td class="course">数据结构<br />陈老师<br />实验楼401<br />1-16周</td>
+        <td></td><td></td><td></td>
+    </tr>
+    <tr>
+        <td>第5节</td>
+        <td></td><td></td><td></td><td></td>
+        <td class="course">体育<br />刘老师<br />体育馆<br />1-16周</td>
+        <td></td><td></td>
+    </tr>
+</table>
+<p style="font-size: 11px; color: #666;">
+    提示：登录真实教务系统后，点击页面顶部「采集课表」，App 会抓取当前页面 HTML
+    并在本地解析，不会上传到服务器。
+</p>
+</body>
+</html>

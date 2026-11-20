@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- WakeUp V2 light tokens -->
+    <color name="w_primary">#6D7CF0</color>
+    <color name="w_on_primary">#FFFFFF</color>
+    <color name="w_primary_container">#E1E5FF</color>
+    <color name="w_on_primary_container">#1B2150</color>
+    <color name="w_secondary">#4F9E8F</color>
+    <color name="w_on_secondary">#FFFFFF</color>
+    <color name="w_secondary_container">#D6F2EA</color>
+    <color name="w_on_secondary_container">#08372F</color>
+    <color name="w_tertiary">#927ED6</color>
+    <color name="w_on_tertiary">#FFFFFF</color>
+    <color name="w_tertiary_container">#ECE4FF</color>
+    <color name="w_on_tertiary_container">#2F2350</color>
+
+    <color name="w_surface">#FAF9FE</color>
+    <color name="w_on_surface">#1B1A21</color>
+    <color name="w_surface_container_lowest">#FFFFFF</color>
+    <color name="w_surface_container_low">#F4F2FC</color>
+    <color name="w_surface_container">#EEECF7</color>
+    <color name="w_surface_container_high">#E7E4F1</color>
+    <color name="w_surface_container_highest">#E0DDEB</color>
+    <color name="w_on_surface_variant">#5B5868</color>
+    <color name="w_outline">#7B7788</color>
+    <color name="w_outline_variant">#DAD5E5</color>
+    <color name="w_error">#BA1A1A</color>
+    <color name="w_on_error">#FFFFFF</color>
+    <color name="w_grid_line">#E3DFEC</color>
+    <color name="w_time_text">#8B8799</color>
+
+    <!-- legacy aliases used by earlier code -->
+    <color name="md_primary">@color/w_primary</color>
+    <color name="md_primary_dark">@color/w_primary</color>
+    <color name="md_secondary">@color/w_secondary</color>
+    <color name="md_tertiary">@color/w_tertiary</color>
+    <color name="md_surface">@color/w_surface</color>
+    <color name="md_surface_dark">@color/w_surface</color>
+    <color name="md_on_surface">@color/w_on_surface</color>
+    <color name="md_on_surface_variant">@color/w_on_surface_variant</color>
+    <color name="md_outline">@color/w_outline</color>
+    <color name="md_surface_container">@color/w_surface_container</color>
+    <color name="md_surface_container_dark">@color/w_surface_container</color>
+    <color name="white">#FFFFFF</color>
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="black">#000000</color>
+</resources>

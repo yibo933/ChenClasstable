@@ -1,0 +1,14 @@
+﻿<!doctype html>
+<html><head><meta charset="utf-8"><title>延迟加载课表</title></head>
+<body>
+<h2>2026-2027 学期课表</h2>
+<div id="app">正在加载课程数据...</div>
+<script>
+setTimeout(function(){
+  document.getElementById('app').innerHTML =
+    '<table border="1"><tr><th>节次</th><th>周一</th><th>周二</th></tr>' +
+    '<tr><td>第1节</td><td>高等数学<br>张老师<br>教101<br>1-16周</td><td></td></tr>' +
+    '<tr><td>第2节</td><td></td><td>大学英语<br>李老师<br>文科楼302<br>1-16周</td></tr></table>';
+}, 2500);
+</script>
+</body></html>

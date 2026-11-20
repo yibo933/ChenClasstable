@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="w_page_padding">16dp</dimen>
+    <dimen name="w_section_gap">24dp</dimen>
+    <dimen name="w_card_padding">16dp</dimen>
+    <dimen name="w_card_radius">16dp</dimen>
+    <dimen name="w_course_radius">14dp</dimen>
+    <dimen name="w_input_radius">14dp</dimen>
+    <dimen name="w_action_size">40dp</dimen>
+    <dimen name="w_row_height">56dp</dimen>
+    <dimen name="w_week_strip_height">56dp</dimen>
+    <dimen name="w_grid_axis">52dp</dimen>
+    <dimen name="w_grid_row">58dp</dimen>
+</resources>

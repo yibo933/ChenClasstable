@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.WakeUp" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/w_primary</item>
+        <item name="colorOnPrimary">@color/w_on_primary</item>
+        <item name="colorPrimaryContainer">@color/w_primary_container</item>
+        <item name="colorOnPrimaryContainer">@color/w_on_primary_container</item>
+        <item name="colorSecondary">@color/w_secondary</item>
+        <item name="colorOnSecondary">@color/w_on_secondary</item>
+        <item name="colorSecondaryContainer">@color/w_primary_container</item>
+        <item name="colorOnSecondaryContainer">@color/w_on_primary_container</item>
+        <item name="colorTertiary">@color/w_tertiary</item>
+        <item name="colorOnTertiary">@color/w_on_tertiary</item>
+        <item name="colorTertiaryContainer">@color/w_tertiary_container</item>
+        <item name="colorOnTertiaryContainer">@color/w_on_tertiary_container</item>
+        <item name="android:colorBackground">@color/w_surface</item>
+        <item name="colorOnBackground">@color/w_on_surface</item>
+        <item name="colorSurface">@color/w_surface</item>
+        <item name="colorOnSurface">@color/w_on_surface</item>
+        <item name="colorSurfaceVariant">@color/w_surface_container</item>
+        <item name="colorOnSurfaceVariant">@color/w_on_surface_variant</item>
+        <item name="colorOutline">@color/w_outline</item>
+        <item name="colorOutlineVariant">@color/w_outline_variant</item>
+        <item name="colorError">@color/w_error</item>
+        <item name="colorOnError">@color/w_on_error</item>
+        <item name="android:windowBackground">@color/w_surface</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
+    <style name="TextAppearance.WakeUp.Headline" parent="TextAppearance.Material3.HeadlineSmall">
+        <item name="android:textSize">22sp</item>
+        <item name="android:letterSpacing">0.005</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+    <style name="TextAppearance.WakeUp.Title" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textSize">16sp</item>
+        <item name="android:textFontWeight">600</item>
+    </style>
+    <style name="TextAppearance.WakeUp.Body" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textSize">14sp</item>
+    </style>
+    <style name="TextAppearance.WakeUp.Label" parent="TextAppearance.Material3.LabelMedium">
+        <item name="android:textSize">12sp</item>
+        <item name="android:textFontWeight">500</item>
+    </style>
+</resources>

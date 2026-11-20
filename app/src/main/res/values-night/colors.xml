@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- WakeUp V2 dark tokens (独立设计，不是反色) -->
+    <color name="w_primary">#BCC4FF</color>
+    <color name="w_on_primary">#202A6B</color>
+    <color name="w_primary_container">#3A458F</color>
+    <color name="w_on_primary_container">#E1E5FF</color>
+    <color name="w_secondary">#86D6C6</color>
+    <color name="w_on_secondary">#00382F</color>
+    <color name="w_secondary_container">#24594E</color>
+    <color name="w_on_secondary_container">#D6F2EA</color>
+    <color name="w_tertiary">#CBB8FF</color>
+    <color name="w_on_tertiary">#35275C</color>
+    <color name="w_tertiary_container">#493A75</color>
+    <color name="w_on_tertiary_container">#ECE4FF</color>
+
+    <color name="w_surface">#121118</color>
+    <color name="w_on_surface">#E6E1EC</color>
+    <color name="w_surface_container_lowest">#0D0C12</color>
+    <color name="w_surface_container_low">#1A1921</color>
+    <color name="w_surface_container">#201E29</color>
+    <color name="w_surface_container_high">#2A2733</color>
+    <color name="w_surface_container_highest">#35313F</color>
+    <color name="w_on_surface_variant">#C9C4D3</color>
+    <color name="w_outline">#928E9E</color>
+    <color name="w_outline_variant">#494552</color>
+    <color name="w_error">#FFB4AB</color>
+    <color name="w_on_error">#690005</color>
+    <color name="w_grid_line">#2D2A37</color>
+    <color name="w_time_text">#85808F</color>
+</resources>
