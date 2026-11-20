@@ -63,16 +63,6 @@
 
 ## 安装
 
-仓库根目录提供调试安装包：
-
-```text
-ChenClasstable-debug.apk
-```
-
-传到 Android 手机上安装即可。这是 debug 签名包，未在应用商店上架。
-
-也可以使用 adb：
-
 ```bash
 adb install -r ChenClasstable-debug.apk
 ```
