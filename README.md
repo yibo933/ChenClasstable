@@ -15,7 +15,7 @@
 
 |课表页|今日页|深色课表|
 |-|-|-|
-|!\[课表页](screenshots/01-schedule-light.png)|!\[今日页](screenshots/02-today-light.png)|!\[深色课表](screenshots/10-schedule-dark.png)|
+|![课表页](screenshots/01-schedule-light.png)|![今日页](screenshots/02-today-light.png)|![深色课表](screenshots/10-schedule-dark.png)|
 
 ## 主要功能
 
