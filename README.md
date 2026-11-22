@@ -12,7 +12,7 @@
 ---
 
 ## 下载
-[蓝奏云](https://yangyibo.lanzouw.com/i0mjQ4gptnfi)密码:b1m4,手机下载不了将手机浏览器UA改为电脑端！
+前往[GithubRelease页面](https://github.com/yibo933/ChenClasstable/releases)查看
 
 ## 界面预览
 
