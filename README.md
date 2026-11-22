@@ -2,14 +2,17 @@
 
 * 一款本地优先的 Android 课表应用：把学校教务系统的课表导入手机，支持按周 / 按天查看。课程可编辑、删除，无需账号，课表也不会上传到服务器。
 
-\---
+---
 
 ## 制作背景
 
 * 本人因受不了大多数课表软件乱七八糟的~~狗屎~~构式一般***广告***（祝发明摇一摇广告的人死全家！），所以决定通过鞭策AI制作该应用。
 * 该应用仅7mb左右大小，安装完并设置课表后最多不超过50mb!（比大多数课表应用占用小！）。
 
-\---
+---
+
+## 下载
+[蓝奏云](https://yangyibo.lanzouw.com/i0mjQ4gptnfi)密码:b1m4,手机下载不了将手机浏览器UA改为电脑端！
 
 ## 界面预览
 
@@ -66,22 +69,6 @@
 * 可隐藏表格网格线，课程块和时间轴仍会保留；
 * 可显示或隐藏周末。
 
-## 安装
-
-仓库根目录提供调试安装包：
-
-```text
-ChenClasstable-debug.apk
-```
-
-传到 Android 手机上安装即可。这是 debug 签名包，未在应用商店上架。
-
-也可以使用 adb：
-
-```bash
-adb install -r ChenClasstable-debug.apk
-```
-
 ---
 
 ## 编译环境
@@ -119,7 +106,7 @@ app/build/outputs/apk/debug/ChenClasstable-debug.apk
 
 用 Android Studio 打开项目根目录，等待 Gradle Sync 完成后运行即可。
 
-\---
+---
 
 ## 项目结构
 
@@ -146,20 +133,20 @@ ChenClasstable/
 ├── screenshots/                       实际运行截图
 ├── docs/design-v2/                    设计过程与实现记录
 ├── build.gradle / settings.gradle     Gradle 配置
-└── ChenClasstable-debug.apk           当前调试安装包
+└── README.md / .gitignore           使用说明与忽略规则
 ```
 
-\---
+---
 
 ## 数据与隐私
 
 课程、课表和应用设置均使用 SharedPreferences 保存在本机：
 
 * 没有账号系统，没有云同步，也不会上传课程数据；
-* 仅申请 `INTERNET` 权限，用于打开学校教务网页；
+* 申请 `INTERNET` 权限打开学校教务网页；`WRITE_EXTERNAL_STORAGE` 只针对 Android 9 及以下，用于把导出的 JSON 写进 Download 目录；
 * 采集的网页只在本地解析，临时文件用完即删。
 
-\---
+---
 
 ## 已知限制
 
@@ -167,7 +154,7 @@ ChenClasstable/
 * webview界面仍在处于开发阶段。
 * 颜色设置仍有一定问题。
 
-\---
+---
 
 ## 版本与说明
 
