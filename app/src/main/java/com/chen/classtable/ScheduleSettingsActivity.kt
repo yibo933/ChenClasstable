@@ -34,6 +34,7 @@ class ScheduleSettingsActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         AppSettings.load(this)
         setContentView(R.layout.activity_schedule_settings)
+        AdaptiveLayoutManager.applyReadableWidth(this, 720)
         UiUtils.applySystemBarAppearance(this)
         val table = CourseStore.activeTable(this)
         findViewById<MaterialToolbar>(R.id.toolbar).apply {

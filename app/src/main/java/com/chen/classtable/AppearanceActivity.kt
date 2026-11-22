@@ -37,6 +37,7 @@ class AppearanceActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         AppSettings.load(this)
         setContentView(R.layout.activity_appearance)
+        AdaptiveLayoutManager.applyReadableWidth(this, 720)
         UiUtils.applySystemBarAppearance(this)
         findViewById<MaterialToolbar>(R.id.toolbar).setNavigationOnClickListener { finish() }
 

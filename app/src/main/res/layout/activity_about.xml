@@ -82,7 +82,7 @@
                         android:paddingTop="5dp"
                         android:paddingEnd="14dp"
                         android:paddingBottom="5dp"
-                        android:text="v1.1"
+                        android:text="v1.2"
                         android:textColor="?attr/colorOnPrimaryContainer"
                         android:textSize="12sp"
                         android:textStyle="bold" />
@@ -248,7 +248,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
-                                android:text="1.1"
+                                android:text="1.2"
                                 android:textColor="?attr/colorOnSurfaceVariant"
                                 android:textSize="12sp" />
                         </LinearLayout>

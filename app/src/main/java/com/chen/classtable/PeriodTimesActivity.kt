@@ -45,6 +45,7 @@ class PeriodTimesActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         AppSettings.load(this)
         setContentView(R.layout.activity_period_times)
+        AdaptiveLayoutManager.applyReadableWidth(this, 720)
         UiUtils.applySystemBarAppearance(this)
         val table = CourseStore.activeTable(this)
         findViewById<MaterialToolbar>(R.id.toolbar).apply {

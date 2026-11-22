@@ -216,6 +216,90 @@ object AppSettings {
             .apply()
         return true
     }
+    data class TableSettings(
+        val startDateMillis: Long,
+        val maxWeek: Int,
+        val dayPeriods: Int,
+        val periodStarts: IntArray,
+        val periodEnds: IntArray,
+        val showWeekend: Boolean,
+        val showScheduleTable: Boolean
+    )
+
+    /** 读取任意课表的独立设置，不切换当前课表。 */
+    fun readTableSettings(context: Context, tableId: String): TableSettings {
+        val p = context.getSharedPreferences(PREF, Context.MODE_PRIVATE)
+        val prefix = if (tableId.isBlank()) "" else "t_${tableId}_"
+        fun int(key: String, def: Int): Int =
+            p.getInt(prefix + key, p.getInt(key, def))
+        fun long(key: String, def: Long): Long =
+            p.getLong(prefix + key, p.getLong(key, def))
+        fun bool(key: String, def: Boolean): Boolean =
+            p.getBoolean(prefix + key, p.getBoolean(key, def))
+
+        val maxWeek = int("maxWeek", 20).coerceIn(1, 60)
+        val dayPeriods = int("dayPeriods", 10).coerceIn(1, MAX_PERIODS)
+        val starts = IntArray(MAX_PERIODS)
+        val ends = IntArray(MAX_PERIODS)
+        val legacyStart = int("periodStart", 8 * 60)
+        val duration = int("periodDuration", 45).coerceIn(10, 180)
+        val breakMin = int("breakMinutes", 10).coerceIn(0, 60)
+        var s = legacyStart
+        for (i in 0 until MAX_PERIODS) {
+            starts[i] = s
+            ends[i] = (s + duration).coerceAtMost(24 * 60 - 1)
+            s += duration + breakMin
+        }
+        val raw = p.getString(prefix + "periodTimes", p.getString("periodTimes", null))
+        if (!raw.isNullOrBlank()) {
+            val parts = raw.split(';')
+            for (i in 0 until MAX_PERIODS) {
+                val pair = parts.getOrNull(i)?.split(',')
+                val ps = pair?.getOrNull(0)?.trim()?.toIntOrNull()
+                val pe = pair?.getOrNull(1)?.trim()?.toIntOrNull()
+                if (ps != null && pe != null && ps in 0 until 24 * 60 && pe in (ps + 1) until 24 * 60) {
+                    starts[i] = ps
+                    ends[i] = pe
+                }
+            }
+        }
+        return TableSettings(
+            startDateMillis = long("startDate", defaultStartDate()),
+            maxWeek = maxWeek,
+            dayPeriods = dayPeriods,
+            periodStarts = starts,
+            periodEnds = ends,
+            showWeekend = bool("weekend", true),
+            showScheduleTable = bool("showScheduleTable", true)
+        )
+    }
+
+    /** 将导出文件中的设置写回指定课表，不要求该课表当前处于激活状态。 */
+    fun saveTableSettings(context: Context, tableId: String, s: TableSettings) {
+        val prefix = "t_${tableId}_"
+        val count = s.dayPeriods.coerceIn(1, MAX_PERIODS)
+        val encoded = (0 until MAX_PERIODS).joinToString(";") { i ->
+            val start = s.periodStarts.getOrElse(i) { 8 * 60 }.coerceIn(0, 24 * 60 - 2)
+            val end = s.periodEnds.getOrElse(i) { start + 45 }.coerceIn(start + 1, 24 * 60 - 1)
+            "$start,$end"
+        }
+        val firstStart = s.periodStarts.getOrElse(0) { 8 * 60 }
+        val firstEnd = s.periodEnds.getOrElse(0) { firstStart + 45 }
+        val secondStart = s.periodStarts.getOrElse(1) { firstEnd + 10 }
+        context.getSharedPreferences(PREF, Context.MODE_PRIVATE).edit()
+            .putBoolean(prefix + "initialized", true)
+            .putLong(prefix + "startDate", s.startDateMillis)
+            .putInt(prefix + "maxWeek", s.maxWeek.coerceIn(1, 60))
+            .putInt(prefix + "week", 1)
+            .putInt(prefix + "dayPeriods", count)
+            .putString(prefix + "periodTimes", encoded)
+            .putInt(prefix + "periodStart", firstStart)
+            .putInt(prefix + "periodDuration", (firstEnd - firstStart).coerceAtLeast(1))
+            .putInt(prefix + "breakMinutes", (secondStart - firstEnd).coerceAtLeast(0))
+            .putBoolean(prefix + "weekend", s.showWeekend)
+            .putBoolean(prefix + "showScheduleTable", s.showScheduleTable)
+            .apply()
+    }
     fun accentColor(): Int = Color.parseColor(ACCENTS[accentIndex])
 
     // ---------------- 每节时间 ----------------

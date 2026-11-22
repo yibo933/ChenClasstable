@@ -106,14 +106,45 @@ class ScheduleGridView @JvmOverloads constructor(
         isFakeBoldText = true
     }
 
-    private val rowHeight = dp(58f).toFloat()
-    private val axisWidth = dp(52f).toFloat()
+    private var rowHeight = dp(58f).toFloat()
+    private var axisWidth = dp(52f).toFloat()
     private val edgePadding = dp(6f).toFloat()
+    private var metricsWidthDp = 0
+    private var currentLayouts: List<CourseLayout> = emptyList()
+
+    private data class CourseLayout(val course: Course, val rect: RectF)
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        updateMetrics(w)
+        invalidate()
+    }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec)
+        updateMetrics(width)
         val height = (rowHeight * AppSettings.dayPeriods).toInt() + 1
         setMeasuredDimension(width, height)
+    }
+
+    private fun updateMetrics(widthPx: Int) {
+        val widthDp = (widthPx / resources.displayMetrics.density).toInt()
+        if (widthDp == metricsWidthDp) return
+        metricsWidthDp = widthDp
+        axisWidth = dp(
+            when {
+                widthDp >= 840 -> 64f
+                widthDp >= 600 -> 56f
+                else -> 52f
+            }
+        )
+        rowHeight = dp(
+            when {
+                widthDp >= 840 -> 66f
+                widthDp >= 600 -> 62f
+                else -> 58f
+            }
+        )
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -143,87 +174,160 @@ class ScheduleGridView @JvmOverloads constructor(
             canvas.drawText(AppSettings.periodEnd(p), axisWidth / 2, cy + sp(44f), timePaint)
         }
 
-        for (c in courses) {
-            if (!CourseStore.weekActive(c, week)) continue
-            if (!showWeekend && c.day > 5) continue
-            val day = c.day.coerceIn(1, cols)
-            val start = c.startNode.coerceIn(1, periods)
-            val end = c.endNode.coerceIn(start, periods)
-            val rect = RectF(
-                axisWidth + colWidth * (day - 1) + dp(2f),
-                rowHeight * (start - 1) + dp(2f),
-                axisWidth + colWidth * day - dp(2f),
-                rowHeight * end - dp(2f)
-            )
-            if (rect.width() < dp(10f) || rect.height() < dp(14f)) continue
-            val colors = CoursePalette.pairFor(c.name, paletteOffset, dark)
-            courseBg.color = colors.container
-            canvas.drawRoundRect(rect, dp(10f), dp(10f), courseBg)
-
-            canvas.save()
-            canvas.clipRect(rect)
-            courseText.color = colors.content
-            courseSub.color = colors.content
-            courseWeek.color = colors.content
-            courseNote.color = colors.content
-            courseSub.alpha = 190
-            courseWeek.alpha = 150
-            courseNote.alpha = 210
-            val maxTextWidth = rect.width() - dp(5f)
-            val narrow = rect.width() < dp(34f)
-            courseText.textSize = sp(
-                if (narrow) 8.0f else if (c.name.length > 6) 8.2f else 9.4f
-            )
-            if (narrow) {
-                val t = TextUtils.ellipsize(c.name, courseText, maxTextWidth, TextUtils.TruncateAt.END)
-                canvas.drawText(t.toString(), rect.centerX(), rect.top + sp(15f), courseText)
-                if (c.note.isNotBlank()) {
-                    // 窄卡片只显示“备”标记，完整备注在详情面板中展示
-                    canvas.drawText("备", rect.right - sp(7f), rect.top + sp(11f), courseNote)
-                }
-                if (rect.height() >= dp(44f)) {
-                    val week = TextUtils.ellipsize(
-                        CourseStore.weekLabel(c), courseWeek, maxTextWidth, TextUtils.TruncateAt.END
-                    )
-                    canvas.drawText(week.toString(), rect.centerX(), rect.bottom - dp(4f), courseWeek)
-                }
-            } else {
-                val nameLines = wrapText(c.name, courseText, maxTextWidth, 2)
-                var y = rect.top + sp(13f)
-                for (line in nameLines) {
-                    if (y > rect.bottom - dp(3f)) break
-                    canvas.drawText(line, rect.centerX(), y, courseText)
-                    y += sp(11f)
-                }
-                val meta = mutableListOf<String>()
-                if (c.room.isNotBlank()) meta.add(c.room)
-                if (c.teacher.isNotBlank()) meta.add(c.teacher)
-                for (line in meta) {
-                    if (y > rect.bottom - dp(2f)) break
-                    val t = TextUtils.ellipsize(line, courseSub, maxTextWidth, TextUtils.TruncateAt.END)
-                    canvas.drawText(t.toString(), rect.centerX(), y, courseSub)
-                    y += sp(9.5f)
-                }
-                if (c.note.isNotBlank() && rect.height() >= dp(70f) && y < rect.bottom - dp(14f)) {
-                    val noteText = TextUtils.ellipsize(
-                        "备注：${c.note}", courseNote, maxTextWidth, TextUtils.TruncateAt.END
-                    )
-                    canvas.drawText(noteText.toString(), rect.centerX(), y, courseNote)
-                    y += sp(9f)
-                }
-                val weekLabel = CourseStore.weekLabel(c)
-                if (rect.height() >= dp(48f) && y < rect.bottom - dp(1f)) {
-                    val t = TextUtils.ellipsize(weekLabel, courseWeek, maxTextWidth, TextUtils.TruncateAt.END)
-                    canvas.drawText(t.toString(), rect.centerX(), rect.bottom - dp(5f), courseWeek)
-                }
-            }
-            canvas.restore()
+        currentLayouts = computeLayouts(periods, cols, colWidth)
+        for (item in currentLayouts) {
+            drawCourse(canvas, item)
         }
 
-        if (showTableGrid) drawCurrentTime(canvas, cols, colWidth, periods)
+        if (showTableGrid) drawCurrentTime(canvas, cols, periods)
     }
 
-    private fun drawCurrentTime(canvas: Canvas, cols: Int, colWidth: Float, periods: Int) {
+    /**
+     * 同一时间段有课程冲突时，把该冲突簇拆成并排 lane；
+     * 每个簇独立计算 lane 数，避免整列无谓变窄。
+     */
+    private fun computeLayouts(periods: Int, cols: Int, colWidth: Float): List<CourseLayout> {
+        val result = mutableListOf<CourseLayout>()
+        for (day in 1..cols) {
+            val dayCourses = courses
+                .filter {
+                    it.day == day &&
+                        CourseStore.weekActive(it, week) &&
+                        (showWeekend || it.day <= 5)
+                }
+                .sortedWith(compareBy({ it.startNode }, { it.endNode }))
+            if (dayCourses.isEmpty()) continue
+
+            val clusters = mutableListOf<MutableList<Course>>()
+            var current = mutableListOf<Course>()
+            var clusterEnd = 0
+            for (course in dayCourses) {
+                val start = course.startNode.coerceIn(1, periods)
+                val end = course.endNode.coerceIn(start, periods)
+                if (current.isEmpty() || start <= clusterEnd) {
+                    current.add(course)
+                    clusterEnd = maxOf(clusterEnd, end)
+                } else {
+                    clusters.add(current)
+                    current = mutableListOf(course)
+                    clusterEnd = end
+                }
+            }
+            if (current.isNotEmpty()) clusters.add(current)
+
+            for (cluster in clusters) {
+                val laneEnds = mutableListOf<Int>()
+                val laneOf = mutableListOf<Int>()
+                for (course in cluster) {
+                    val start = course.startNode.coerceIn(1, periods)
+                    val end = course.endNode.coerceIn(start, periods)
+                    var lane = laneEnds.indexOfFirst { it < start }
+                    if (lane < 0) {
+                        laneEnds.add(end)
+                        lane = laneEnds.size - 1
+                    } else {
+                        laneEnds[lane] = end
+                    }
+                    laneOf.add(lane)
+                }
+                val laneCount = laneEnds.size.coerceAtLeast(1)
+                val leftBase = axisWidth + colWidth * (day - 1) + dp(2f)
+                val fullWidth = (colWidth - dp(4f)).coerceAtLeast(dp(4f))
+                val laneWidth = fullWidth / laneCount
+
+                cluster.forEachIndexed { index, course ->
+                    val start = course.startNode.coerceIn(1, periods)
+                    val end = course.endNode.coerceIn(start, periods)
+                    val left = leftBase + laneWidth * laneOf[index]
+                    val right = left + laneWidth - dp(1f)
+                    val rect = RectF(
+                        left,
+                        rowHeight * (start - 1) + dp(2f),
+                        right,
+                        rowHeight * end - dp(2f)
+                    )
+                    if (rect.width() >= dp(8f) && rect.height() >= dp(12f)) {
+                        result.add(CourseLayout(course, rect))
+                    }
+                }
+            }
+        }
+        return result
+    }
+
+    private fun drawCourse(canvas: Canvas, item: CourseLayout) {
+        val c = item.course
+        val rect = item.rect
+        val colors = CoursePalette.pairFor(c.name, paletteOffset, dark)
+        courseBg.color = colors.container
+        canvas.drawRoundRect(rect, dp(10f), dp(10f), courseBg)
+
+        canvas.save()
+        canvas.clipRect(rect)
+        courseText.color = colors.content
+        courseSub.color = colors.content
+        courseWeek.color = colors.content
+        courseNote.color = colors.content
+        courseSub.alpha = 190
+        courseWeek.alpha = 150
+        courseNote.alpha = 210
+
+        val wide = metricsWidthDp >= 840
+        val maxTextWidth = rect.width() - dp(5f)
+        val narrow = rect.width() < dp(34f)
+        courseText.textSize = sp(
+            when {
+                narrow -> 8.0f
+                wide -> if (c.name.length > 8) 9.4f else 10.4f
+                c.name.length > 6 -> 8.2f
+                else -> 9.4f
+            }
+        )
+        if (narrow) {
+            val t = TextUtils.ellipsize(c.name, courseText, maxTextWidth, TextUtils.TruncateAt.END)
+            canvas.drawText(t.toString(), rect.centerX(), rect.top + sp(15f), courseText)
+            if (c.note.isNotBlank()) {
+                canvas.drawText("备", rect.right - sp(7f), rect.top + sp(11f), courseNote)
+            }
+            if (rect.height() >= dp(44f)) {
+                val week = TextUtils.ellipsize(
+                    CourseStore.weekLabel(c), courseWeek, maxTextWidth, TextUtils.TruncateAt.END
+                )
+                canvas.drawText(week.toString(), rect.centerX(), rect.bottom - dp(4f), courseWeek)
+            }
+        } else {
+            val nameLines = wrapText(c.name, courseText, maxTextWidth, 2)
+            var y = rect.top + sp(13f)
+            for (line in nameLines) {
+                if (y > rect.bottom - dp(3f)) break
+                canvas.drawText(line, rect.centerX(), y, courseText)
+                y += sp(11f)
+            }
+            val meta = mutableListOf<String>()
+            if (c.room.isNotBlank()) meta.add(c.room)
+            if (c.teacher.isNotBlank()) meta.add(c.teacher)
+            for (line in meta) {
+                if (y > rect.bottom - dp(2f)) break
+                val t = TextUtils.ellipsize(line, courseSub, maxTextWidth, TextUtils.TruncateAt.END)
+                canvas.drawText(t.toString(), rect.centerX(), y, courseSub)
+                y += sp(9.5f)
+            }
+            if (c.note.isNotBlank() && rect.height() >= dp(70f) && y < rect.bottom - dp(14f)) {
+                val noteText = TextUtils.ellipsize(
+                    "备注：${c.note}", courseNote, maxTextWidth, TextUtils.TruncateAt.END
+                )
+                canvas.drawText(noteText.toString(), rect.centerX(), y, courseNote)
+                y += sp(9f)
+            }
+            val weekLabel = CourseStore.weekLabel(c)
+            if (rect.height() >= dp(48f) && y < rect.bottom - dp(1f)) {
+                val t = TextUtils.ellipsize(weekLabel, courseWeek, maxTextWidth, TextUtils.TruncateAt.END)
+                canvas.drawText(t.toString(), rect.centerX(), rect.bottom - dp(5f), courseWeek)
+            }
+        }
+        canvas.restore()
+    }
+    private fun drawCurrentTime(canvas: Canvas, cols: Int, periods: Int) {
         if (week != AppSettings.currentWeekNow()) return
         val today = AppSettings.todayDayOfWeek()
         if (!showWeekend && today > 5) return
@@ -297,10 +401,7 @@ class ScheduleGridView @JvmOverloads constructor(
                 val day = dayAt(event.x)
                 val period = periodAt(event.y)
                 if (day != null && period != null) {
-                    val hit = courses.firstOrNull {
-                        CourseStore.weekActive(it, week) &&
-                            it.day == day && period >= it.startNode && period <= it.endNode
-                    }
+                    val hit = currentLayouts.firstOrNull { it.rect.contains(event.x, event.y) }?.course
                     if (hit != null) onCourseClick?.invoke(hit)
                     else onEmptyClick?.invoke(day, period)
                     performClick()

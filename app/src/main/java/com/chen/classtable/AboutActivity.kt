@@ -13,6 +13,7 @@ class AboutActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         AppSettings.load(this)
         setContentView(R.layout.activity_about)
+        AdaptiveLayoutManager.applyReadableWidth(this, 720)
         UiUtils.applySystemBarAppearance(this)
 
         findViewById<MaterialToolbar>(R.id.toolbar).apply {
@@ -25,7 +26,7 @@ class AboutActivity : BaseActivity() {
 
         val version = runCatching {
             packageManager.getPackageInfo(packageName, 0).versionName
-        }.getOrNull() ?: "1.1"
+        }.getOrNull() ?: "1.2"
         findViewById<TextView>(R.id.tvVersion).text = version
         findViewById<TextView>(R.id.tvVersionChip).text = "v$version"
 

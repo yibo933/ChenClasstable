@@ -101,8 +101,12 @@ object CourseStore {
 
     fun load(context: Context): MutableList<Course> {
         val table = activeTable(context) ?: return mutableListOf()
+        return load(context, table.id)
+    }
+
+    fun load(context: Context, tableId: String): MutableList<Course> {
         val p = prefs(context)
-        val text = p.getString(coursesKey(table.id), "") ?: p.getString(KEY_OLD, "") ?: ""
+        val text = p.getString(coursesKey(tableId), "") ?: p.getString(KEY_OLD, "") ?: ""
         val out = mutableListOf<Course>()
         if (text.isEmpty()) return out
         for (line in text.split("\n")) {
@@ -134,6 +138,10 @@ object CourseStore {
 
     fun save(context: Context, courses: List<Course>) {
         val table = activeTable(context) ?: createTable(context, "我的课表")
+        save(context, table.id, courses)
+    }
+
+    fun save(context: Context, tableId: String, courses: List<Course>) {
         val text = courses.joinToString("\n") { c ->
             listOf(
                 enc(c.name), c.day.toString(), enc(c.room), enc(c.teacher),
@@ -142,7 +150,7 @@ object CourseStore {
                 c.credit.toString(), enc(c.note), enc(c.startTime), enc(c.endTime)
             ).joinToString("\t")
         }
-        prefs(context).edit().putString(coursesKey(table.id), text).apply()
+        prefs(context).edit().putString(coursesKey(tableId), text).apply()
     }
 
     fun append(context: Context, courses: List<Course>): Int {

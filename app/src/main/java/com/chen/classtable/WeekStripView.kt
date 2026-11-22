@@ -79,7 +79,7 @@ class WeekStripView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val cols = if (showWeekend) 7 else 5
-        val axis = if (compactAxis) dp(8f) else dp(52f)
+        val axis = axisWidth()
         val cw = (width - axis - edgePadding) / cols.toFloat()
 
         // 用字体实际 metrics 推算出文字基线与日期圆心，保证大字体下不重叠。
@@ -116,10 +116,22 @@ class WeekStripView @JvmOverloads constructor(
         }
     }
 
+    private fun axisWidth(): Float {
+        if (compactAxis) return dp(8f)
+        val widthDp = (width / resources.displayMetrics.density).toInt()
+        return dp(
+            when {
+                widthDp >= 840 -> 64f
+                widthDp >= 600 -> 56f
+                else -> 52f
+            }
+        )
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_UP) {
             val cols = if (showWeekend) 7 else 5
-            val axis = if (compactAxis) dp(8f) else dp(52f)
+            val axis = axisWidth()
             val cw = (width - axis - edgePadding) / cols.toFloat()
             if (event.x < axis) return true
             val day = (((event.x - axis) / cw).toInt() + 1).coerceIn(1, cols)

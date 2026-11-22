@@ -1,6 +1,9 @@
 package com.chen.classtable
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -15,6 +18,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.core.app.ActivityCompat
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
@@ -42,9 +46,28 @@ class MainActivity : BaseActivity() {
     private var selectedDay = AppSettings.todayDayOfWeek()
     private var selectedWeek = 1
 
+    private var layoutMode = AdaptiveLayoutManager.Mode.PHONE
+    private var currentWidthDp = 0
+    private var switchingLayout = false
+    private var lastActiveTableId: String? = null
+
     private lateinit var pages: List<View>
     private lateinit var pageContainer: View
-    private lateinit var bottomNav: BottomNavigationView
+    private var bottomNav: BottomNavigationView? = null
+
+    private var tabletSidebar: View? = null
+    private var tabletTableScroll: View? = null
+    private var tabletTableList: LinearLayout? = null
+    private var tabletTablesLabel: View? = null
+    private var tabletAppName: View? = null
+    private var tabletNavToday: View? = null
+    private var tabletNavSchedule: View? = null
+    private var tabletNavSettings: View? = null
+    private var tabletNavTodayLabel: TextView? = null
+    private var tabletNavScheduleLabel: TextView? = null
+    private var tabletNavSettingsLabel: TextView? = null
+    private var tabletDetailContainer: View? = null
+    private var tabletDetail: TabletDetailPane? = null
 
     // 今日
     private lateinit var tvTodayDate: TextView
@@ -74,7 +97,12 @@ class MainActivity : BaseActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppSettings.load(this)
-        selectedWeek = AppSettings.currentWeekNow()
+        selectedWeek = savedInstanceState?.getInt("wakeup_week", AppSettings.currentWeekNow())
+            ?: AppSettings.currentWeekNow()
+        selectedDay = savedInstanceState?.getInt("wakeup_day", AppSettings.todayDayOfWeek())
+            ?: AppSettings.todayDayOfWeek()
+        lastActiveTableId = CourseStore.activeTable(this)?.id
+
         val desired = if (AppSettings.darkMode) AppCompatDelegate.MODE_NIGHT_YES
         else AppCompatDelegate.MODE_NIGHT_NO
         if (AppCompatDelegate.getDefaultNightMode() != desired) {
@@ -86,7 +114,15 @@ class MainActivity : BaseActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             window.isNavigationBarContrastEnforced = false
         }
-        setContentView(R.layout.activity_main)
+
+        val width = AdaptiveLayoutManager.windowWidthDp(this)
+        layoutMode = AdaptiveLayoutManager.modeFor(width)
+        currentWidthDp = width
+        setContentView(
+            if (AdaptiveLayoutManager.isTablet(layoutMode)) R.layout.activity_main_tablet
+            else R.layout.activity_main
+        )
+
         val night = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
             android.content.res.Configuration.UI_MODE_NIGHT_YES
         WindowCompat.getInsetsController(window, window.decorView).apply {
@@ -94,27 +130,51 @@ class MainActivity : BaseActivity() {
             isAppearanceLightNavigationBars = !night
         }
         bind()
-        setupBottomNav()
+        if (AdaptiveLayoutManager.isTablet(layoutMode)) setupTabletChrome() else setupBottomNav()
         setupSchedulePage()
         setupSettingsPage()
         applyWindowInsets()
-        showPage(savedInstanceState?.getInt("wakeup_page", 0) ?: 0, animate = false)
+        if (AdaptiveLayoutManager.isTablet(layoutMode)) configureTabletMode(layoutMode)
+        val initialPage = savedInstanceState?.getInt("wakeup_page", 0)
+            ?: if (AdaptiveLayoutManager.isTablet(layoutMode)) 1 else 0
+        showPage(initialPage, animate = false)
         registerPredictiveBack()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        if (switchingLayout || !::pageContainer.isInitialized) return
+        val width = AdaptiveLayoutManager.windowWidthDp(this)
+        currentWidthDp = width
+        val next = AdaptiveLayoutManager.modeFor(width)
+        if (next == layoutMode) return
+        if (AdaptiveLayoutManager.isTablet(next) != AdaptiveLayoutManager.isTablet(layoutMode)) {
+            reapplyLayout(next)
+        } else {
+            layoutMode = next
+            configureTabletMode(next)
+        }
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putInt("wakeup_page", page)
+        outState.putInt("wakeup_week", selectedWeek)
+        outState.putInt("wakeup_day", selectedDay)
         super.onSaveInstanceState(outState)
     }
 
     private fun bind() {
+        tabletDetail = null
+        tabletDetailContainer = null
+        tabletSidebar = null
+        tabletTableList = null
         pageContainer = findViewById(R.id.pageContainer)
         pages = listOf(
             findViewById(R.id.pageToday),
             findViewById(R.id.pageSchedule),
             findViewById(R.id.pageSettings)
         )
-        bottomNav = findViewById(R.id.bottomNav)
+        bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
 
         tvTodayDate = findViewById(R.id.tvTodayDate)
         tvTodayMeta = findViewById(R.id.tvTodayMeta)
@@ -136,14 +196,39 @@ class MainActivity : BaseActivity() {
         btnCreateTable = findViewById(R.id.btnCreateTable)
         emptyOverlay = findViewById(R.id.emptyOverlay)
         btnQuickImport = findViewById(R.id.btnQuickImport)
+
+        tabletSidebar = findViewById(R.id.tabletSidebar)
+        tabletTableScroll = findViewById(R.id.tabletTableScroll)
+        tabletTableList = findViewById(R.id.tabletTableList)
+        tabletTablesLabel = findViewById(R.id.tabletTablesLabel)
+        tabletAppName = findViewById(R.id.tabletAppName)
+        tabletNavToday = findViewById(R.id.tabletNavToday)
+        tabletNavSchedule = findViewById(R.id.tabletNavSchedule)
+        tabletNavSettings = findViewById(R.id.tabletNavSettings)
+        tabletNavTodayLabel = findViewById(R.id.tabletNavTodayLabel)
+        tabletNavScheduleLabel = findViewById(R.id.tabletNavScheduleLabel)
+        tabletNavSettingsLabel = findViewById(R.id.tabletNavSettingsLabel)
+        tabletDetailContainer = findViewById(R.id.tabletDetailPane)
+
+        val root = findViewById<View>(R.id.mainRoot)
+        root.addOnLayoutChangeListener { _, left, _, right, _, _, _, _, _ ->
+            if (switchingLayout) return@addOnLayoutChangeListener
+            val widthDp = ((right - left) / resources.displayMetrics.density).toInt()
+            if (widthDp > 0) root.post { onWindowWidthChanged(widthDp) }
+        }
     }
 
     private fun applyWindowInsets() {
         val root = findViewById<View>(R.id.mainRoot)
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
             val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            pageContainer.setPadding(0, bars.top, 0, 0)
-            bottomNav.setPadding(0, 0, 0, bars.bottom)
+            if (AdaptiveLayoutManager.isTablet(layoutMode)) {
+                root.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            } else {
+                root.setPadding(0, 0, 0, 0)
+                pageContainer.setPadding(0, bars.top, 0, 0)
+                bottomNav?.setPadding(0, 0, 0, bars.bottom)
+            }
             insets
         }
     }
@@ -151,7 +236,7 @@ class MainActivity : BaseActivity() {
     // ---------------- 底部导航 ----------------
 
     private fun setupBottomNav() {
-        bottomNav.setOnItemSelectedListener { item ->
+        bottomNav?.setOnItemSelectedListener { item ->
             val index = pageOf(item.itemId)
             if (index != page) showPage(index, syncNav = false) else refreshPage()
             true
@@ -192,12 +277,231 @@ class MainActivity : BaseActivity() {
             }
         }
         page = index
-        if (syncNav && bottomNav.selectedItemId != menuIdOf(index)) {
-            bottomNav.selectedItemId = menuIdOf(index)
+        updateTabletDetailVisibility()
+        if (syncNav) {
+            bottomNav?.let { nav ->
+                if (nav.selectedItemId != menuIdOf(index)) nav.selectedItemId = menuIdOf(index)
+            }
         }
+        updateTabletNavigation()
         refreshPage()
     }
 
+    // ---------------- 平板自适应布局 ----------------
+
+    private fun onWindowWidthChanged(widthDp: Int) {
+        if (switchingLayout) return
+        if (kotlin.math.abs(widthDp - currentWidthDp) < 2) return
+        currentWidthDp = widthDp
+        val next = AdaptiveLayoutManager.modeFor(widthDp)
+        if (next == layoutMode) return
+        if (AdaptiveLayoutManager.isTablet(next) != AdaptiveLayoutManager.isTablet(layoutMode)) {
+            reapplyLayout(next)
+        } else {
+            layoutMode = next
+            configureTabletMode(next)
+        }
+    }
+
+    private fun reapplyLayout(mode: AdaptiveLayoutManager.Mode) {
+        if (switchingLayout) return
+        switchingLayout = true
+        val keepPage = page
+        val keepWeek = selectedWeek
+        val keepDay = selectedDay
+        layoutMode = mode
+        setContentView(
+            if (AdaptiveLayoutManager.isTablet(mode)) R.layout.activity_main_tablet
+            else R.layout.activity_main
+        )
+        bind()
+        if (AdaptiveLayoutManager.isTablet(mode)) setupTabletChrome() else setupBottomNav()
+        setupSchedulePage()
+        setupSettingsPage()
+        applyWindowInsets()
+        if (AdaptiveLayoutManager.isTablet(mode)) configureTabletMode(mode)
+        selectedWeek = keepWeek
+        selectedDay = keepDay
+        showPage(keepPage, animate = false)
+        switchingLayout = false
+    }
+
+    private fun setupTabletChrome() {
+        tabletNavToday?.setOnClickListener { showPage(0) }
+        tabletNavSchedule?.setOnClickListener { showPage(1) }
+        tabletNavSettings?.setOnClickListener { showPage(2) }
+
+        val detailRoot = findViewById<View>(R.id.tabletDetailRoot)
+        tabletDetail = TabletDetailPane(
+            this,
+            detailRoot,
+            onEdit = { course ->
+                val index = CourseStore.load(this).indexOf(course)
+                if (index >= 0) openCourseEditor(index)
+                else Toast.makeText(this, "课程已变化，请重试", Toast.LENGTH_SHORT).show()
+            },
+            onDelete = { course -> confirmDeleteCourse(course, selectedWeek) },
+            onClose = { updateTabletOverview() }
+        )
+        configureTabletMode(layoutMode)
+        renderTabletTables()
+        updateTabletNavigation()
+        updateTabletOverview()
+    }
+
+    private fun configureTabletMode(mode: AdaptiveLayoutManager.Mode) {
+        if (!AdaptiveLayoutManager.isTablet(mode)) return
+        val showLabels = mode != AdaptiveLayoutManager.Mode.COMPACT
+        val sidebar = tabletSidebar ?: return
+        sidebar.layoutParams = (sidebar.layoutParams as LinearLayout.LayoutParams).apply {
+            width = dp(AdaptiveLayoutManager.sidebarWidthDp(mode))
+        }
+        tabletAppName?.visibility = if (showLabels) View.VISIBLE else View.GONE
+        tabletTablesLabel?.visibility = if (showLabels) View.VISIBLE else View.GONE
+        tabletTableScroll?.visibility = if (showLabels) View.VISIBLE else View.GONE
+        tabletNavTodayLabel?.visibility = if (showLabels) View.VISIBLE else View.GONE
+        tabletNavScheduleLabel?.visibility = if (showLabels) View.VISIBLE else View.GONE
+        tabletNavSettingsLabel?.visibility = if (showLabels) View.VISIBLE else View.GONE
+
+        updateTabletDetailVisibility()
+        sidebar.requestLayout()
+    }
+
+    /** 右侧详情栏只属于课表页；今日/设置页隐藏，让内容区自然扩展。 */
+    private fun updateTabletDetailVisibility() {
+        val supported = AdaptiveLayoutManager.isTablet(layoutMode) &&
+            AdaptiveLayoutManager.showsDetail(layoutMode)
+        val visible = supported && page == 1
+        tabletDetailContainer?.visibility = if (visible) View.VISIBLE else View.GONE
+        if (supported) {
+            tabletDetailContainer?.layoutParams =
+                (tabletDetailContainer!!.layoutParams as LinearLayout.LayoutParams).apply {
+                    width = dp(AdaptiveLayoutManager.detailWidthDp(layoutMode))
+                }
+        } else {
+            tabletDetail?.clear()
+        }
+    }
+
+    private fun renderTabletTables() {
+        val list = tabletTableList ?: return
+        val active = CourseStore.activeTable(this)?.id
+        val onSurface = MaterialColors.getColor(window.decorView, com.google.android.material.R.attr.colorOnSurface)
+        val activeText = MaterialColors.getColor(
+            window.decorView,
+            com.google.android.material.R.attr.colorOnSecondaryContainer
+        )
+        val activeBg = MaterialColors.getColor(
+            window.decorView,
+            com.google.android.material.R.attr.colorSecondaryContainer
+        )
+        list.removeAllViews()
+        for (table in CourseStore.tables(this)) {
+            val selected = table.id == active
+            val row = TextView(this).apply {
+                text = table.name
+                textSize = 14f
+                maxLines = 1
+                ellipsize = android.text.TextUtils.TruncateAt.END
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                setPadding(dp(12), 0, dp(10), 0)
+                minHeight = dp(44)
+                setTextColor(if (selected) activeText else onSurface)
+                if (selected) {
+                    setBackgroundColor(activeBg)
+                    setTypeface(null, android.graphics.Typeface.BOLD)
+                }
+                isClickable = true
+                isFocusable = true
+                setOnClickListener { if (!selected) activateTable(table.id) }
+            }
+            list.addView(
+                row,
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    dp(44)
+                ).apply { bottomMargin = dp(2) }
+            )
+        }
+    }
+
+    private fun updateTabletNavigation() {
+        val labels = listOf(
+            tabletNavToday to tabletNavTodayLabel,
+            tabletNavSchedule to tabletNavScheduleLabel,
+            tabletNavSettings to tabletNavSettingsLabel
+        )
+        val onSurface = MaterialColors.getColor(window.decorView, com.google.android.material.R.attr.colorOnSurface)
+        val selectedText = MaterialColors.getColor(
+            window.decorView,
+            com.google.android.material.R.attr.colorOnPrimaryContainer
+        )
+        val selectedBg = MaterialColors.getColor(
+            window.decorView,
+            com.google.android.material.R.attr.colorPrimaryContainer
+        )
+        labels.forEachIndexed { index, pair ->
+            val row = pair.first ?: return@forEachIndexed
+            val label = pair.second
+            val selected = index == page
+            row.setBackgroundColor(if (selected) selectedBg else Color.TRANSPARENT)
+            label?.setTextColor(if (selected) selectedText else onSurface)
+            label?.setTypeface(null, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
+        }
+    }
+
+    private fun activateTable(id: String) {
+        if (CourseStore.activeTable(this)?.id == id) return
+        CourseStore.setActive(this, id)
+        onActiveTableChanged()
+    }
+
+    private fun onActiveTableChanged() {
+        AppSettings.load(this)
+        selectedWeek = AppSettings.currentWeekNow()
+        selectedDay = AppSettings.todayDayOfWeek()
+        lastActiveTableId = CourseStore.activeTable(this)?.id
+        tabletDetail?.clear()
+        refreshSchedule()
+        refreshToday()
+        renderTabletTables()
+        updateTabletOverview()
+    }
+
+    private fun showCourseDetails(course: Course) {
+        if (page == 1 && AdaptiveLayoutManager.showsDetail(layoutMode) && tabletDetail != null) {
+            tabletDetail?.showCourse(course)
+            tabletDetailContainer?.visibility = View.VISIBLE
+        } else {
+            showCourseDetail(course)
+        }
+    }
+
+    private fun updateTabletOverview() {
+        val pane = tabletDetail ?: return
+        if (pane.selectedCourse != null) return
+        val courses = CourseStore.load(this)
+        val now = System.currentTimeMillis()
+        val todayWeek = AppSettings.weekForDate(now)
+        val today = courses.filter {
+            CourseStore.weekActive(it, todayWeek) && it.day == AppSettings.todayDayOfWeek()
+        }
+        val summary = when {
+            courses.isEmpty() -> "还没有课表"
+            !AppSettings.semesterStarted() -> "还未开学"
+            !hasUpcomingCourse(courses, now) -> "本学期的课程已全部完成"
+            today.isEmpty() -> "今天没有课"
+            else -> "今天 ${today.size} 节课 · ${today.joinToString("、") { it.name }.take(36)}"
+        }
+        val start = java.text.SimpleDateFormat("yyyy/M/d", java.util.Locale.CHINA)
+            .format(java.util.Date(AppSettings.startDateMillis))
+        pane.showOverview(
+            selectedWeek.coerceIn(1, AppSettings.maxWeek),
+            selectedDay,
+            "开学 $start · 共 ${AppSettings.maxWeek} 周",
+            summary
+        )
+    }
     private fun refreshPage() {
         when (page) {
             0 -> refreshToday()
@@ -211,6 +515,7 @@ class MainActivity : BaseActivity() {
     private fun refreshToday() {
         AppSettings.load(this)
         val courses = CourseStore.load(this)
+        updateTabletOverview()
         val now = System.currentTimeMillis()
         val dow = AppSettings.todayDayOfWeek()
         val rawWeek = AppSettings.rawWeekForDate(now)
@@ -394,7 +699,7 @@ class MainActivity : BaseActivity() {
             selectedWeek = (selectedWeek + dir).coerceIn(1, AppSettings.maxWeek)
             refreshSchedule()
         }
-        scheduleGrid.onCourseClick = { showCourseDetail(it) }
+        scheduleGrid.onCourseClick = { showCourseDetails(it) }
         scheduleGrid.onEmptyClick = { day, period -> showAddCourseDialog(day, period) }
         findViewById<View>(R.id.btnAdd).setOnClickListener { openImport() }
         btnQuickImport.setOnClickListener { openImport() }
@@ -424,13 +729,7 @@ class MainActivity : BaseActivity() {
             .setTitle("课表管理")
             .setItems(items.toTypedArray()) { _, which ->
                 when {
-                    which < list.size -> {
-                        CourseStore.setActive(this, list[which].id)
-                        AppSettings.load(this)
-                        selectedWeek = AppSettings.currentWeekNow()
-                        refreshSchedule()
-                        refreshToday()
-                    }
+                    which < list.size -> activateTable(list[which].id)
                     which == list.size -> showCreateTableDialog()
                     else -> confirmDeleteTable()
                 }
@@ -451,10 +750,7 @@ class MainActivity : BaseActivity() {
             .setPositiveButton("创建") { _, _ ->
                 val name = input.text.toString().trim().ifBlank { "我的课表" }
                 CourseStore.createTable(this, name)
-                AppSettings.load(this)
-                selectedWeek = AppSettings.currentWeekNow()
-                refreshSchedule()
-                refreshToday()
+                onActiveTableChanged()
             }
             .setNegativeButton("取消", null)
             .show()
@@ -467,10 +763,7 @@ class MainActivity : BaseActivity() {
             .setMessage("确定删除「${active.name}」及其全部课程？")
             .setPositiveButton("删除") { _, _ ->
                 CourseStore.deleteTable(this, active.id)
-                AppSettings.load(this)
-                selectedWeek = AppSettings.currentWeekNow()
-                refreshSchedule()
-                refreshToday()
+                onActiveTableChanged()
             }
             .setNegativeButton("取消", null)
             .show()
@@ -479,6 +772,90 @@ class MainActivity : BaseActivity() {
     private fun scrollToCurrentPeriod() {
         scheduleScroll.post {
             scheduleScroll.smoothScrollTo(0, scheduleGrid.currentPeriodOffset())
+        }
+    }
+
+    private var pendingExportTable: CourseStore.TableInfo? = null
+
+    private fun showExportTableDialog() {
+        val tables = CourseStore.tables(this)
+        if (tables.isEmpty()) {
+            Toast.makeText(this, "还没有课表，无法导出", Toast.LENGTH_SHORT).show()
+            return
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(4), 0, 0)
+        }
+        var dialog: AlertDialog? = null
+        for (table in tables) {
+            val row = TextView(this).apply {
+                text = table.name
+                textSize = 15f
+                setTextColor(MaterialColors.getColor(window.decorView, com.google.android.material.R.attr.colorOnSurface))
+                setPadding(dp(22), dp(12), dp(22), dp(12))
+                isClickable = true
+                isFocusable = true
+                val out = TypedValue()
+                context.theme.resolveAttribute(android.R.attr.selectableItemBackground, out, true)
+                setBackgroundResource(out.resourceId)
+                setOnClickListener {
+                    dialog?.dismiss()
+                    exportTable(table)
+                }
+            }
+            box.addView(row)
+        }
+        val scroll = ScrollView(this).apply { addView(box) }
+        dialog = MaterialAlertDialogBuilder(this)
+            .setTitle("导出课表")
+            .setView(scroll)
+            .setNegativeButton("取消", null)
+            .create()
+        dialog.show()
+    }
+
+    private fun exportTable(table: CourseStore.TableInfo) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q &&
+            ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            pendingExportTable = table
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                REQUEST_EXPORT_PERMISSION
+            )
+            return
+        }
+        try {
+            val json = TimetableJson.encode(this, table)
+            val name = TimetableExporter.filenameFor(table.name)
+            val uri = TimetableExporter.write(this, name, json)
+            if (uri == null) {
+                Toast.makeText(this, "导出失败：无法写入 Download 目录", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "已导出到 Download/$name", Toast.LENGTH_LONG).show()
+            }
+        } catch (t: Throwable) {
+            Toast.makeText(this, "导出失败：${t.message ?: t.javaClass.simpleName}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQUEST_EXPORT_PERMISSION) {
+            val table = pendingExportTable
+            pendingExportTable = null
+            if (grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED && table != null) {
+                exportTable(table)
+            } else {
+                Toast.makeText(this, "没有存储权限，无法写入 Download", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -518,6 +895,11 @@ class MainActivity : BaseActivity() {
         weekStrip.compactAxis = false
         emptyOverlay.visibility = if (courses.isEmpty()) View.VISIBLE else View.GONE
         updateScheduleSummary()
+        val selected = tabletDetail?.selectedCourse
+        if (selected != null && !CourseStore.weekActive(selected, week)) {
+            tabletDetail?.clear()
+        }
+        updateTabletOverview()
     }
 
     private fun updateScheduleSummary() {
@@ -566,6 +948,7 @@ class MainActivity : BaseActivity() {
     }
 
     private fun openCourseEditor(index: Int) {
+        tabletDetail?.clear()
         startActivity(
             Intent(this, CourseEditActivity::class.java)
                 .putExtra(CourseEditActivity.EXTRA_INDEX, index)
@@ -680,6 +1063,7 @@ class MainActivity : BaseActivity() {
         }
         all.addAll(index, replacements)
         CourseStore.save(this, all)
+        tabletDetail?.clear()
         refreshSchedule()
         refreshToday()
         Toast.makeText(this, "已删除第 $week 周", Toast.LENGTH_SHORT).show()
@@ -700,6 +1084,7 @@ class MainActivity : BaseActivity() {
         // “仅删除某周”会把课程拆成多个周次区间；删除所有周必须一并清理这些区间。
         val remaining = all.filterNot { sameCourseSeries(it, c) }
         CourseStore.save(this, remaining)
+        tabletDetail?.clear()
         refreshSchedule()
         refreshToday()
         Toast.makeText(this, "已删除所有周", Toast.LENGTH_SHORT).show()
@@ -785,6 +1170,7 @@ class MainActivity : BaseActivity() {
         findViewById<View>(R.id.cardAppearance).setOnClickListener {
             startActivity(Intent(this, AppearanceActivity::class.java))
         }
+        findViewById<View>(R.id.cardExport).setOnClickListener { showExportTableDialog() }
         findViewById<View>(R.id.cardAbout).setOnClickListener {
             startActivity(Intent(this, AboutActivity::class.java))
         }
@@ -803,6 +1189,11 @@ class MainActivity : BaseActivity() {
     }
 
     private fun handleBack() {
+        if (tabletDetail?.selectedCourse != null) {
+            tabletDetail?.clear()
+            updateTabletOverview()
+            return
+        }
         if (page != 0) showPage(0) else finish()
     }
 
@@ -816,9 +1207,14 @@ class MainActivity : BaseActivity() {
         super.onResume()
         AppSettings.load(this)
         if (!::pageContainer.isInitialized) return
-        // 以当日时间/日期为准展示
-        selectedDay = AppSettings.todayDayOfWeek()
-        selectedWeek = AppSettings.currentWeekNow()
+        val activeId = CourseStore.activeTable(this)?.id
+        if (lastActiveTableId != null && activeId != null && activeId != lastActiveTableId) {
+            selectedDay = AppSettings.todayDayOfWeek()
+            selectedWeek = AppSettings.currentWeekNow()
+            tabletDetail?.clear()
+        }
+        lastActiveTableId = activeId
+        renderTabletTables()
         showPage(page, animate = false)
     }
 
@@ -830,4 +1226,8 @@ class MainActivity : BaseActivity() {
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
+    companion object {
+        private const val REQUEST_EXPORT_PERMISSION = 4102
+    }
 }

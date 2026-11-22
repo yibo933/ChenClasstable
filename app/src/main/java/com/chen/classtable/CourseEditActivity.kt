@@ -153,6 +153,7 @@ class CourseEditActivity : BaseActivity() {
             )
         )
         setContentView(root)
+        AdaptiveLayoutManager.applyReadableWidth(this, 720)
     }
 
     private fun addTextField(parent: LinearLayout, hint: String, value: String): TextInputEditText {

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:clipToPadding="false"
@@ -10,106 +11,138 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="20dp">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="学校教务地址（WebView 登录后采集）"
+            android:text="导入课表"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="26sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:lineSpacingExtra="2dp"
+            android:text="支持小陈课表 JSON 备份、PDF 课表，以及在网页中登录采集。"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="13sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnImportJson"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="24dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="选择 JSON 文件"
+            android:textSize="15sp"
+            app:cornerRadius="14dp"
+            app:icon="@drawable/ic_note"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="只接受由本应用「设置 → 导出课表」生成的 .json 文件。"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnImportPdf"
+            style="?attr/materialButtonOutlinedStyle"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginTop="18dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="选择 PDF 文件"
+            android:textSize="15sp"
+            app:cornerRadius="14dp"
+            app:icon="@drawable/ic_note"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="PDF 会在本机解析，不上传服务器。支持课表系统导出的周课表 PDF。"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="网页登录采集"
+            android:textColor="?attr/colorOnSurface"
+            android:textSize="16sp"
             android:textStyle="bold" />
 
         <EditText
-            android:id="@+id/etUrl"
+            android:id="@+id/etWebUrl"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:hint="http://jwxt.example.edu.cn/"
+            android:layout_height="52dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_icon_tile"
+            android:hint="粘贴教务系统课表地址，例如 https://..."
             android:inputType="textUri"
-            android:text="https://jwxt.example.edu.cn/"
-            android:textSize="12sp" />
+            android:paddingHorizontal="14dp"
+            android:singleLine="true"
+            android:textColor="?attr/colorOnSurface"
+            android:textColorHint="?attr/colorOnSurfaceVariant"
+            android:textSize="13sp" />
 
-        <LinearLayout
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnWebView"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnWebView"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:minHeight="48dp"
-                android:text="WebView登录采集"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/btnDemoLogin"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:minHeight="48dp"
-                android:text="演示登录页"
-                android:textSize="12sp" />
-        </LinearLayout>
+            android:layout_height="54dp"
+            android:layout_marginTop="10dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="打开网页登录并采集"
+            android:textSize="15sp"
+            app:cornerRadius="14dp"
+            app:icon="@drawable/ic_note"
+            app:iconGravity="textStart"
+            app:iconPadding="8dp" />
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:text="或直接粘贴课表页 HTML："
-            android:textSize="12sp" />
-
-        <Spinner
-            android:id="@+id/spinnerTypes"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <EditText
-            android:id="@+id/etHtml"
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:gravity="top|start"
-            android:hint="HTML"
-            android:inputType="textMultiLine"
-            android:textSize="12sp" />
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnParse"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:minHeight="48dp"
-            android:text="解析并导入" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <Button
-                android:id="@+id/btnLoadMock"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:minHeight="48dp"
-                android:text="载入示例HTML"
-                android:textSize="12sp" />
-
-            <Button
-                android:id="@+id/btnCancel"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:minHeight="48dp"
-                android:text="取消"
-                android:textSize="12sp" />
-        </LinearLayout>
+            android:text="在网页中完成登录，进入课表页后点击页面顶部「采集课表」。"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="11sp" />
 
         <TextView
             android:id="@+id/tvResult"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:padding="4dp"
-            android:text=""
-            android:textSize="12sp" />
+            android:layout_marginTop="22dp"
+            android:background="@drawable/bg_icon_tile"
+            android:lineSpacingExtra="2dp"
+            android:padding="14dp"
+            android:text="请选择文件开始导入"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnCancel"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="24dp"
+            android:insetTop="0dp"
+            android:insetBottom="0dp"
+            android:text="取消"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            app:backgroundTint="@android:color/transparent"
+            app:cornerRadius="14dp" />
     </LinearLayout>
 </ScrollView>
