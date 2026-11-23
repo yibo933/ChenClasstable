@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Bundle
 import android.util.TypedValue
@@ -408,8 +409,10 @@ class MainActivity : BaseActivity() {
                 minHeight = dp(44)
                 setTextColor(if (selected) activeText else onSurface)
                 if (selected) {
-                    setBackgroundColor(activeBg)
+                    background = roundedBackground(activeBg, 22)
                     setTypeface(null, android.graphics.Typeface.BOLD)
+                } else {
+                    setBackgroundColor(Color.TRANSPARENT)
                 }
                 isClickable = true
                 isFocusable = true
@@ -424,6 +427,13 @@ class MainActivity : BaseActivity() {
             )
         }
     }
+
+    private fun roundedBackground(color: Int, radiusDp: Int): GradientDrawable =
+        GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dp(radiusDp).toFloat()
+            setColor(color)
+        }
 
     private fun updateTabletNavigation() {
         val labels = listOf(
@@ -444,7 +454,11 @@ class MainActivity : BaseActivity() {
             val row = pair.first ?: return@forEachIndexed
             val label = pair.second
             val selected = index == page
-            row.setBackgroundColor(if (selected) selectedBg else Color.TRANSPARENT)
+            if (selected) {
+                row.background = roundedBackground(selectedBg, 26)
+            } else {
+                row.setBackgroundColor(Color.TRANSPARENT)
+            }
             label?.setTextColor(if (selected) selectedText else onSurface)
             label?.setTypeface(null, if (selected) android.graphics.Typeface.BOLD else android.graphics.Typeface.NORMAL)
         }

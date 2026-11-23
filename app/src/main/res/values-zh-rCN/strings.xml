@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="material_timepicker_hour">时</string>
+    <string name="material_timepicker_minute">分</string>
+</resources>
+

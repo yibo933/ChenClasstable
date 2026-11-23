@@ -26,7 +26,7 @@ class AboutActivity : BaseActivity() {
 
         val version = runCatching {
             packageManager.getPackageInfo(packageName, 0).versionName
-        }.getOrNull() ?: "1.2"
+        }.getOrNull() ?: "1.2.1"
         findViewById<TextView>(R.id.tvVersion).text = version
         findViewById<TextView>(R.id.tvVersionChip).text = "v$version"
 

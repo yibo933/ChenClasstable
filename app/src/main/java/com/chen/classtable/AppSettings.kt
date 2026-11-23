@@ -73,8 +73,8 @@ object AppSettings {
         // 以下设置按课表隔离。
         showWeekend = p.getBoolean(key("weekend"), true)
         showScheduleTable = p.getBoolean(key("showScheduleTable"), true)
-        maxWeek = p.getInt(key("maxWeek"), 20)
-        currentWeek = p.getInt(key("week"), 1)
+        maxWeek = p.getInt(key("maxWeek"), 20).coerceIn(1, 60)
+        currentWeek = p.getInt(key("week"), 1).coerceIn(1, maxWeek)
         startDateMillis = p.getLong(key("startDate"), defaultStartDate())
 
         val legacyStart = p.getInt(key("periodStart"), 8 * 60)
@@ -88,6 +88,13 @@ object AppSettings {
         else storedCount.coerceIn(1, MAX_PERIODS)
         syncLegacyFields()
         loaded = true
+    }
+
+    /** 强制从磁盘重读当前课表设置（导入/覆盖后使用）。 */
+    fun reload(context: Context) {
+        loaded = false
+        loadedTableId = null
+        load(context)
     }
 
     private fun key(name: String): String = prefix + name
